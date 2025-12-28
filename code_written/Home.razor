@@ -1,0 +1,132 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.IO
+@using System.Threading.Tasks
+@using System.Collections.Generic;
+@using System.Text.Json;
+@using BlazorApp.utilities;
+
+@inject IJSRuntime JS
+
+
+<PageTitle>Canadian UAV Project</PageTitle>
+<h1>Canadian UAV Project</h1>
+
+<div id="dropzone" class="dropzone">
+    <p>Drag and drop CSV and JSON files here</p>
+    <InputFile OnChange="OnInputFileChange" accept=".csv,.json" />
+</div>
+
+<script src="download.js"></script>
+<button @onclick="DownloadJson">Download JSON</button>
+
+<div class="grid3">
+    <div>JSON data
+        @if (Sensor1 != null)
+        {
+            <ul>
+                @foreach (var p in Sensor1)
+                {
+                    <li>@p.id — (@p.latitude, @p.longitude)</li>
+                }
+            </ul>
+        }
+    </div>
+    <div>CSV data
+        @if (Sensor2 != null)
+        {
+            <ul>
+                @foreach (var p in Sensor2)
+                {
+                    <li>@p.id — (@p.latitude, @p.longitude)</li>
+                }
+            </ul>
+        }
+    </div>
+    <div>Common Anomalies
+        @if (idPairs != null)
+        {
+            <ul>
+                @foreach (var p in idPairs)
+                {
+                    <li>@p</li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+
+<style>
+.grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+</style>
+
+
+@code
+{
+    private string? FileContent;
+    private List<Anomaly>? Sensor1 { get; set; }
+    private List<Anomaly> Sensor2 = new List<Anomaly>();
+    private List<float> Distances = new List<float>();
+    private Dictionary<int, int>? idPairs;
+    
+    
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        /*
+        Called when a file is uploaded
+        Updates page with changes
+            -Formats sensor data
+            -Formats output
+        */
+
+        var file = e.File;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+        using var reader = new StreamReader(stream);
+
+        FileContent = await reader.ReadToEndAsync();
+
+        if (file.Name.EndsWith(".json"))    // handle json
+        {
+            Sensor1 = JsonSerializer.Deserialize<List<Anomaly>>(FileContent);
+        }
+        if (file.Name.EndsWith(".csv"))    // handle csv
+        {
+            var lines = FileContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        
+            foreach (var line in lines.Skip(1))
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                var parts = line.Split(',');
+                Sensor2.Add(new Anomaly(int.Parse(parts[0]), double.Parse(parts[1]), double.Parse(parts[2])));
+            }
+        }
+
+        // checking if data is entered
+        if (Sensor1 is not null && Sensor2 is not null)
+        {
+            idPairs = GeoUtils.FindDistances(Sensor1, Sensor2);
+        }
+    }
+
+    private async Task DownloadJson()
+    {
+        string jsonOutput = JsonSerializer.Serialize(idPairs, new JsonSerializerOptions{ WriteIndented = true });
+
+        // checking if data is entered
+        if (jsonOutput != "null")
+        {
+            await JS.InvokeVoidAsync("downloadFile", "output.json", jsonOutput);
+        }
+    }
+  
+}
