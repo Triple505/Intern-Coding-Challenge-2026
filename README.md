@@ -1,6 +1,16 @@
 # CUAVs-Coding-Challenge
 
-Challenge Overview:
+This is my solution to the challenge detailed below.
+
+### Solution Overview:
+
+It is a webpage that takes a json and csv file of geospatial data and outputs a json file with pairs of id's from the two files in the following format: "id_1": id_2 where id_1 refers to the id from the json file and id_2 is from the csv file.
+
+### Opening Webpage and Code Created
+
+I understand that whoever is reading this will probably not open the webpage, so I included minimal CSS and provided screenshots in the "screenshots" folder. All the code I have written is in the "code_written" folder for easy access.
+
+### Challenge Overview:
 
 At Canadian UAVs, we handle large amounts of geospatial data, which is the focus of this challenge. The task involves correlating data from two sensors that detect anomalies. However, the sensors are not highly accurate, resulting in false positives and variations in their location readings. Your challenge is to associate the sensor readings based on their coordinates to identify common signals that may have been detected by both sensors. This correlation increases the likelihood that the signal is a genuine detection rather than a false positive.
 
